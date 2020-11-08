@@ -121,12 +121,13 @@ void incrementProcessCounter(int pId)
 void requestMessageReceived(Message *msg)
 {
 	//envia 2 que é o código do grant
-	dprintf(1,"Executando request do processo %ld\n",msg->id);
+	//dprintf(1,"Executando request do processo %ld\n",msg->id);
+	sem_wait(&sm_ClientList);
 	if(checkThreadInClientList(msg->fd))
 	{
 		strncpy(hello, "2", 1024);
 		//dprintf(1,"Enviando msg %s para cliente\n",hello);
-		dprintf(1,"Giving Grant to process %ld\n",msg->id);
+		//dprintf(1,"Giving Grant to process %ld\n",msg->id);
 		send(msg->fd , hello , 1024 , 0 );
 		clientWithGrant = msg->fd;
 	}
@@ -134,6 +135,8 @@ void requestMessageReceived(Message *msg)
 	{
 		sem_post(&sm_noClientWithGrant);
 	}
+	sem_post(&sm_ClientList);
+	
 }
 
 //permite que um novo elemento seja lido da lista e reseta a variavel que guarda o processo com grant
@@ -435,11 +438,6 @@ void *mutualExclusion()
 //Pega client list e fila
 void *handleConnection(void *arg)
 {
-	int pos = 0;
-	//get the socket that triggered select function
-	long unsigned int socketTriggeredSelect = 0;
-	//check if the client socket disconnected or sent message
-	int disconnected = 0;
 	// Creating socket file descriptor IPV4 IPv6
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
 	{ 
